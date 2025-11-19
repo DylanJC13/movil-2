@@ -114,7 +114,7 @@ CMD ["node", "src/server.js"]
    - Abrir puerto 4000 (o el configurado) y, si aplica, colocar detrás de un proxy HTTPS (NGINX/Caddy).
 
 3. **PWA**
-   - Servir contenido estático (Netlify/Vercel/S3/NGINX). Actualizar `apiUrl` desde la UI o inyectar valor por defecto editando `frontend/app.js` (`state.apiBase`).
+   - Servir contenido estático (Netlify/Vercel/S3/NGINX). Ajustar `DEFAULT_API_BASE` en `frontend/app.js` para apuntar al backend público antes de desplegar.
    - Registrar dominio HTTPS para cumplir políticas de instalación PWA.
 
 4. **Operación móvil**
