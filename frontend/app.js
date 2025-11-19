@@ -305,6 +305,60 @@ const renderFacturas = () => {
     .join('');
 };
 
+const renderInvoicePreview = (factura) => {
+  const detalles = Array.isArray(factura.detalles) ? factura.detalles : [];
+  const detalleRows = detalles
+    .map(
+      (detalle) => `
+        <div class="preview-row">
+          <span>${detalle.descripcion || `Producto ${detalle.producto_id}`}</span>
+          <span>${detalle.cantidad}</span>
+          <span>${formatCurrency(detalle.precio_unitario)}</span>
+          <span>${formatCurrency(detalle.subtotal)}</span>
+        </div>
+      `
+    )
+    .join('');
+
+  return `
+    <article class="invoice-preview">
+      <header>
+        <div>
+          <p class="label">Factura</p>
+          <h3>${factura.numero}</h3>
+          <p>${formatDate(factura.fecha)}</p>
+        </div>
+        <div class="preview-summary">
+          <p><span>Subtotal</span><strong>${formatCurrency(factura.subtotal)}</strong></p>
+          <p><span>IVA</span><strong>${formatCurrency(factura.impuestos)}</strong></p>
+          <p class="total"><span>Total</span><strong>${formatCurrency(factura.total)}</strong></p>
+        </div>
+      </header>
+      <section class="preview-body">
+        <div>
+          <p class="label">Cliente</p>
+          <p class="value">${factura.cliente?.nombre || 'N/A'}</p>
+          <p class="hint">${factura.cliente?.identificacion || ''}</p>
+        </div>
+        <div>
+          <p class="label">Estado</p>
+          <p class="value">${factura.estado}</p>
+          ${factura.notas ? `<p class="hint">${factura.notas}</p>` : ''}
+        </div>
+      </section>
+      <section class="preview-table">
+        <div class="preview-row header">
+          <span>Descripción</span>
+          <span>Cant.</span>
+          <span>Precio</span>
+          <span>Total</span>
+        </div>
+        ${detalleRows || '<p class="hint">Sin detalles</p>'}
+      </section>
+    </article>
+  `;
+};
+
 const syncLinePriceWithProduct = (lineaEl) => {
   if (!lineaEl) return;
   const productoSelect = lineaEl.querySelector('.producto');
@@ -386,14 +440,7 @@ facturaForm.addEventListener('submit', async (event) => {
       method: 'POST',
       body: JSON.stringify({ clienteId, lineas, notas: notasInput.value }),
     });
-    resultado.innerHTML = `
-      <h3>Factura generada</h3>
-      <p>Número: <strong>${factura.numero}</strong></p>
-      <p>Subtotal: <strong>${formatCurrency(factura.subtotal)}</strong></p>
-      <p>IVA: <strong>${formatCurrency(factura.impuestos)}</strong></p>
-      <p>Total: <strong>${formatCurrency(factura.total)}</strong></p>
-      <pre>${JSON.stringify(factura, null, 2)}</pre>
-    `;
+    resultado.innerHTML = renderInvoicePreview(factura);
     await loadData();
     facturaForm.reset();
     lineasContainer.innerHTML = renderLineaRow({}, Date.now());

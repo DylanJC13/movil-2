@@ -372,20 +372,83 @@ button:disabled {
   color: var(--indigo-600);
 }
 
+.invoice-preview {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.invoice-preview header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1rem;
+}
+
+.invoice-preview .label {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.75rem;
+  color: var(--slate-500);
+  margin-bottom: 0.25rem;
+}
+
+.invoice-preview .value {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.invoice-preview .preview-summary p {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.15rem 0;
+}
+
+.invoice-preview .preview-summary .total {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.invoice-preview .preview-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.preview-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.preview-row {
+  display: grid;
+  grid-template-columns: 2fr repeat(3, minmax(70px, 1fr));
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.preview-row.header {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--slate-500);
+  border-bottom: 2px solid #cbd5f5;
+}
+
 .result-panel {
   margin-top: 1.5rem;
   border-top: 1px solid #e2e8f0;
   padding-top: 1.25rem;
-  font-family: 'Source Code Pro', monospace;
-  background: #0f172a;
-  color: #f8fafc;
-  border-radius: 1rem;
-  padding: 1rem;
-  word-wrap: break-word;
-}
-
-.result-panel pre {
-  white-space: pre-wrap;
 }
 
 .error {
