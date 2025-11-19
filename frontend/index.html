@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Facturación Móvil</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Sistema de Facturación</h1>
+      <p>Operación móvil para ventas y servicio</p>
+      <div class="connection">
+        <label for="apiUrl">API Base URL</label>
+        <input id="apiUrl" type="url" placeholder="https://api.midominio.com" />
+        <button id="saveApiUrl">Guardar</button>
+        <span id="status"></span>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <h2>Inventario</h2>
+        <div id="inventario" class="cards"></div>
+      </section>
+
+      <section>
+        <h2>Clientes</h2>
+        <div id="clientes" class="cards"></div>
+      </section>
+
+      <section>
+        <h2>Generar factura</h2>
+        <form id="facturaForm">
+          <label>
+            Cliente
+            <select id="clienteSelect" required></select>
+          </label>
+          <div id="lineas"></div>
+          <button type="button" id="addLinea">Agregar producto</button>
+          <label>
+            Notas
+            <textarea id="notas" maxlength="500"></textarea>
+          </label>
+          <button type="submit">Crear factura</button>
+        </form>
+        <div id="facturaResultado"></div>
+      </section>
+    </main>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
