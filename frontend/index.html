@@ -9,185 +9,210 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="hero">
-      <div class="hero-text">
-        <p class="eyebrow">Facturación móvil</p>
-        <h1>Sistema para ventas y servicio</h1>
-        <p class="lead">
-          Consulta inventario, clientes y genera facturas en segundos desde tu
-          smartphone con una interfaz optimizada para pantallas táctiles.
-        </p>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">
+          <span>FM</span>
+          <p>Facturación Móvil</p>
+        </div>
+        <nav>
+          <button class="nav-button active" data-target="inventario">Inventario</button>
+          <button class="nav-button" data-target="clientes">Clientes</button>
+          <button class="nav-button" data-target="ventas">Crear factura</button>
+          <button class="nav-button" data-target="historial">Historial</button>
+        </nav>
+      </aside>
+
+      <div class="content">
+        <header class="hero">
+          <div class="hero-text">
+            <p class="eyebrow">Facturación móvil</p>
+            <h1>Sistema para ventas y servicio</h1>
+            <p class="lead">
+              Consulta inventario, clientes y genera facturas en segundos desde tu
+              smartphone con una interfaz optimizada para pantallas táctiles.
+            </p>
+          </div>
+          <div class="status-card">
+            <p class="status-label">API conectada</p>
+            <strong id="apiInfo"></strong>
+            <span id="statusBadge" class="status-badge">Sincronizando…</span>
+            <p class="status-hint">
+              Última sincronización: <span id="lastSync">--</span>
+            </p>
+          </div>
+        </header>
+
+        <main class="views">
+          <section class="view active" data-view="inventario">
+            <section class="stats-grid" aria-label="Indicadores principales">
+              <article class="stat-card">
+                <p>Productos activos</p>
+                <h3 id="totalProductos">0</h3>
+                <small>Catálogo disponible para ventas</small>
+              </article>
+              <article class="stat-card">
+                <p>Clientes registrados</p>
+                <h3 id="totalClientes">0</h3>
+                <small>Contactos de negocio habilitados</small>
+              </article>
+              <article class="stat-card">
+                <p>Items por reponer</p>
+                <h3 id="stockCritico">0</h3>
+                <small>Productos con stock bajo</small>
+              </article>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Inventario</h2>
+                  <p>Disponibilidad y precio actualizado</p>
+                </div>
+                <button type="button" id="refreshBtn" class="ghost-btn">
+                  ↻ Refrescar datos
+                </button>
+              </div>
+              <div id="inventario" class="cards"></div>
+            </section>
+
+            <section class="panel panel-form">
+              <div>
+                <h2>Registrar producto</h2>
+                <p>Actualiza inventario disponible</p>
+              </div>
+              <form id="productoForm" class="form-grid">
+                <label>
+                  Nombre
+                  <input name="nombre" type="text" required />
+                </label>
+                <label>
+                  SKU
+                  <input name="sku" type="text" required />
+                </label>
+                <label>
+                  Precio (USD)
+                  <input name="precio" type="number" min="0.01" step="0.01" required />
+                </label>
+                <label>
+                  Stock inicial
+                  <input name="stock" type="number" min="0" required />
+                </label>
+                <label>
+                  Stock mínimo
+                  <input name="stockMinimo" type="number" min="0" value="0" />
+                </label>
+                <label class="full">
+                  Descripción
+                  <textarea name="descripcion" rows="2" placeholder="Detalle del producto"></textarea>
+                </label>
+                <button type="submit" class="primary-btn">Guardar producto</button>
+                <p id="productoMessage" class="form-message"></p>
+              </form>
+            </section>
+          </section>
+
+          <section class="view" data-view="clientes">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Clientes</h2>
+                  <p>Cartera para asignar facturas</p>
+                </div>
+              </div>
+              <div id="clientes" class="cards"></div>
+            </section>
+
+            <section class="panel panel-form">
+              <div>
+                <h2>Registrar cliente</h2>
+                <p>Ingresa nuevos clientes corporativos</p>
+              </div>
+              <form id="clienteForm" class="form-grid">
+                <label>
+                  Nombre
+                  <input name="nombre" type="text" required />
+                </label>
+                <label>
+                  Identificación
+                  <input name="identificacion" type="text" required />
+                </label>
+                <label>
+                  Correo
+                  <input name="correo" type="email" />
+                </label>
+                <label>
+                  Teléfono
+                  <input name="telefono" type="text" />
+                </label>
+                <label class="full">
+                  Dirección
+                  <textarea name="direccion" rows="2"></textarea>
+                </label>
+                <button type="submit" class="primary-btn">Guardar cliente</button>
+                <p id="clienteMessage" class="form-message"></p>
+              </form>
+            </section>
+          </section>
+
+          <section class="view" data-view="ventas">
+            <section class="panel panel-form">
+              <div>
+                <h2>Generar factura</h2>
+                <p>Registra ventas y descuenta inventario</p>
+              </div>
+              <form id="facturaForm">
+                <label>
+                  Cliente
+                  <select id="clienteSelect" required></select>
+                </label>
+                <div id="lineas"></div>
+                <button type="button" id="addLinea" class="ghost-btn">
+                  + Agregar producto
+                </button>
+                <div class="summary-panel">
+                  <h3>Resumen de factura</h3>
+                  <div class="summary-row">
+                    <span>Subtotal</span>
+                    <strong id="summarySubtotal">$0.00</strong>
+                  </div>
+                  <div class="summary-row">
+                    <span>IVA (12%)</span>
+                    <strong id="summaryIva">$0.00</strong>
+                  </div>
+                  <div class="summary-row total">
+                    <span>Total</span>
+                    <strong id="summaryTotal">$0.00</strong>
+                  </div>
+                </div>
+                <label>
+                  Notas
+                  <textarea id="notas" maxlength="500" placeholder="Observaciones"></textarea>
+                </label>
+                <button type="submit" class="primary-btn">Crear factura</button>
+              </form>
+              <div id="facturaResultado" class="result-panel"></div>
+            </section>
+          </section>
+
+          <section class="view" data-view="historial">
+            <section class="panel panel-form">
+              <div class="panel-header">
+                <div>
+                  <h2>Facturas generadas</h2>
+                  <p>Consulta el historial reciente</p>
+                </div>
+                <button type="button" id="loadFacturas" class="ghost-btn">
+                  Ver facturas
+                </button>
+              </div>
+              <p id="facturasStatus" class="hint"></p>
+              <div id="facturas" class="facturas"></div>
+            </section>
+          </section>
+        </main>
       </div>
-      <div class="status-card">
-        <p class="status-label">API conectada</p>
-        <strong id="apiInfo"></strong>
-        <span id="statusBadge" class="status-badge">Sincronizando…</span>
-        <p class="status-hint">
-          Última sincronización: <span id="lastSync">--</span>
-        </p>
-      </div>
-    </header>
-
-    <main>
-      <section class="stats-grid" aria-label="Indicadores principales">
-        <article class="stat-card">
-          <p>Productos activos</p>
-          <h3 id="totalProductos">0</h3>
-          <small>Catálogo disponible para ventas</small>
-        </article>
-        <article class="stat-card">
-          <p>Clientes registrados</p>
-          <h3 id="totalClientes">0</h3>
-          <small>Contactos de negocio habilitados</small>
-        </article>
-        <article class="stat-card">
-          <p>Items por reponer</p>
-          <h3 id="stockCritico">0</h3>
-          <small>Productos con stock bajo</small>
-        </article>
-      </section>
-
-      <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Inventario</h2>
-            <p>Disponibilidad y precio actualizado</p>
-          </div>
-          <button type="button" id="refreshBtn" class="ghost-btn">
-            ↻ Refrescar datos
-          </button>
-        </div>
-        <div id="inventario" class="cards"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Clientes</h2>
-            <p>Cartera para asignar facturas</p>
-          </div>
-        </div>
-        <div id="clientes" class="cards"></div>
-      </section>
-
-      <section class="panel panel-form">
-        <div>
-          <h2>Registrar producto</h2>
-          <p>Actualiza inventario disponible</p>
-        </div>
-        <form id="productoForm" class="form-grid">
-          <label>
-            Nombre
-            <input name="nombre" type="text" required />
-          </label>
-          <label>
-            SKU
-            <input name="sku" type="text" required />
-          </label>
-          <label>
-            Precio (USD)
-            <input name="precio" type="number" min="0.01" step="0.01" required />
-          </label>
-          <label>
-            Stock inicial
-            <input name="stock" type="number" min="0" required />
-          </label>
-          <label>
-            Stock mínimo
-            <input name="stockMinimo" type="number" min="0" value="0" />
-          </label>
-          <label class="full">
-            Descripción
-            <textarea name="descripcion" rows="2" placeholder="Detalle del producto"></textarea>
-          </label>
-          <button type="submit" class="primary-btn">Guardar producto</button>
-          <p id="productoMessage" class="form-message"></p>
-        </form>
-      </section>
-
-      <section class="panel panel-form">
-        <div>
-          <h2>Registrar cliente</h2>
-          <p>Ingresa nuevos clientes corporativos</p>
-        </div>
-        <form id="clienteForm" class="form-grid">
-          <label>
-            Nombre
-            <input name="nombre" type="text" required />
-          </label>
-          <label>
-            Identificación
-            <input name="identificacion" type="text" required />
-          </label>
-          <label>
-            Correo
-            <input name="correo" type="email" />
-          </label>
-          <label>
-            Teléfono
-            <input name="telefono" type="text" />
-          </label>
-          <label class="full">
-            Dirección
-            <textarea name="direccion" rows="2"></textarea>
-          </label>
-          <button type="submit" class="primary-btn">Guardar cliente</button>
-          <p id="clienteMessage" class="form-message"></p>
-        </form>
-      </section>
-
-      <section class="panel panel-form">
-        <div>
-          <h2>Generar factura</h2>
-          <p>Registra ventas y descuenta inventario</p>
-        </div>
-        <form id="facturaForm">
-          <label>
-            Cliente
-            <select id="clienteSelect" required></select>
-          </label>
-          <div id="lineas"></div>
-          <button type="button" id="addLinea" class="ghost-btn">
-            + Agregar producto
-          </button>
-          <div class="summary-panel">
-            <h3>Resumen de factura</h3>
-            <div class="summary-row">
-              <span>Subtotal</span>
-              <strong id="summarySubtotal">$0.00</strong>
-            </div>
-            <div class="summary-row">
-              <span>IVA (12%)</span>
-              <strong id="summaryIva">$0.00</strong>
-            </div>
-            <div class="summary-row total">
-              <span>Total</span>
-              <strong id="summaryTotal">$0.00</strong>
-            </div>
-          </div>
-          <label>
-            Notas
-            <textarea id="notas" maxlength="500" placeholder="Observaciones"></textarea>
-          </label>
-          <button type="submit" class="primary-btn">Crear factura</button>
-        </form>
-        <div id="facturaResultado" class="result-panel"></div>
-      </section>
-
-      <section class="panel panel-form">
-        <div class="panel-header">
-          <div>
-            <h2>Facturas generadas</h2>
-            <p>Consulta el historial reciente</p>
-          </div>
-          <button type="button" id="loadFacturas" class="ghost-btn">
-            Ver facturas
-          </button>
-        </div>
-        <p id="facturasStatus" class="hint"></p>
-        <div id="facturas" class="facturas"></div>
-      </section>
-    </main>
+    </div>
 
     <script src="app.js" type="module"></script>
   </body>

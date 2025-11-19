@@ -41,12 +41,16 @@ const facturasContainer = document.getElementById('facturas');
 const loadFacturasBtn = document.getElementById('loadFacturas');
 const facturasStatus = document.getElementById('facturasStatus');
 
+const viewButtons = document.querySelectorAll('.nav-button');
+const views = document.querySelectorAll('.view');
+
 const state = {
   apiBase: DEFAULT_API_BASE,
   inventario: [],
   clientes: [],
   productos: [],
   facturas: [],
+  currentView: 'inventario',
 };
 
 apiInfoLabel.textContent = state.apiBase;
@@ -59,6 +63,16 @@ const setStatus = (message, tone = 'info') => {
   } else if (tone === 'error') {
     statusBadge.classList.add('error');
   }
+};
+
+const setActiveView = (view) => {
+  state.currentView = view;
+  views.forEach((section) => {
+    section.classList.toggle('active', section.dataset.view === view);
+  });
+  viewButtons.forEach((button) => {
+    button.classList.toggle('active', button.dataset.target === view);
+  });
 };
 
 const showFormMessage = (element, message, tone = 'success') => {
@@ -527,6 +541,20 @@ clienteForm?.addEventListener('submit', async (event) => {
 loadFacturasBtn?.addEventListener('click', loadFacturas);
 setFacturasStatus('Pulsa "Ver facturas" para consultar el historial.');
 renderFacturas();
+
+viewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    const target = button.dataset.target;
+    if (target) {
+      setActiveView(target);
+      if (target === 'historial' && !state.facturas.length) {
+        loadFacturas();
+      }
+    }
+  });
+});
+
+setActiveView(state.currentView);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch((err) =>
