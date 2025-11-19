@@ -1,5 +1,12 @@
 const DEFAULT_API_BASE =
   'https://movil-2-qna8j.ondigitalocean.app/movil-2-backend';
+const IVA_RATE = 0.12;
+const currencyFormatter = new Intl.NumberFormat('es-EC', {
+  style: 'currency',
+  currency: 'USD',
+});
+const formatCurrency = (value = 0) => currencyFormatter.format(Number(value) || 0);
+
 const inventarioContainer = document.getElementById('inventario');
 const clientesContainer = document.getElementById('clientes');
 const clienteSelect = document.getElementById('clienteSelect');
@@ -15,6 +22,9 @@ const apiInfoLabel = document.getElementById('apiInfo');
 const totalProductosEl = document.getElementById('totalProductos');
 const totalClientesEl = document.getElementById('totalClientes');
 const stockCriticoEl = document.getElementById('stockCritico');
+const summarySubtotalEl = document.getElementById('summarySubtotal');
+const summaryIvaEl = document.getElementById('summaryIva');
+const summaryTotalEl = document.getElementById('summaryTotal');
 
 const state = {
   apiBase: DEFAULT_API_BASE,
@@ -90,18 +100,38 @@ const renderClientes = () => {
       .join('');
 };
 
+const resolveProductoId = (linea) => {
+  if (linea?.productoId) return linea.productoId;
+  return state.productos[0]?.id ?? '';
+};
+
+const getProductPrice = (productoId) => {
+  const producto = state.productos.find(
+    (item) => Number(item.id) === Number(productoId)
+  );
+  return producto ? Number(producto.precio) : 0;
+};
+
 const renderLineaRow = (linea, index) => {
+  const resolvedProductoId = resolveProductoId(linea);
+  const hasSelection = Boolean(resolvedProductoId);
+  const resolvedPrecio =
+    typeof linea?.precioUnitario === 'number' && linea?.precioUnitario > 0
+      ? linea.precioUnitario
+      : hasSelection
+      ? getProductPrice(resolvedProductoId)
+      : '';
   return `
     <div class="linea" data-index="${index}">
       <label>
         Producto
         <select class="producto" required>
-          <option value="">Seleccione...</option>
+          <option value="" ${hasSelection ? '' : 'selected'}>Seleccione...</option>
           ${state.productos
             .map(
               (producto) => `
                 <option value="${producto.id}" ${
-                  linea?.productoId === producto.id ? 'selected' : ''
+                  Number(resolvedProductoId) === Number(producto.id) ? 'selected' : ''
                 }>${producto.nombre}</option>
               `
             )
@@ -115,23 +145,85 @@ const renderLineaRow = (linea, index) => {
       <label>
         Precio unitario
         <input class="precio" type="number" min="0.01" step="0.01" value="${
-          linea?.precioUnitario || 0
+          resolvedPrecio !== '' ? Number(resolvedPrecio).toFixed(2) : ''
         }" />
       </label>
+      <p class="line-total">
+        Total línea: <strong data-line-total>$0.00</strong>
+      </p>
       <button type="button" class="remove">Eliminar</button>
     </div>
   `;
 };
 
 const addLinea = () => {
-  const linea = document.createElement('div');
-  linea.innerHTML = renderLineaRow({}, Date.now());
-  lineasContainer.appendChild(linea.firstElementChild);
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = renderLineaRow({}, Date.now());
+  const nuevaLinea = wrapper.firstElementChild;
+  lineasContainer.appendChild(nuevaLinea);
+  syncLinePriceWithProduct(nuevaLinea);
+  updateSummary();
 };
 
 const removeLinea = (target) => {
   if (lineasContainer.children.length === 1) return;
   target.closest('.linea').remove();
+  updateSummary();
+};
+
+const readLinesRaw = () => {
+  return [...lineasContainer.querySelectorAll('.linea')].map((lineaEl) => ({
+    productoId: Number(lineaEl.querySelector('.producto').value),
+    cantidad: Number(lineaEl.querySelector('.cantidad').value),
+    precioUnitario: Number(lineaEl.querySelector('.precio').value),
+    elemento: lineaEl,
+  }));
+};
+
+const getValidLines = () =>
+  readLinesRaw()
+    .filter(
+      (linea) =>
+        linea.productoId &&
+        Number(linea.cantidad) > 0 &&
+        Number(linea.precioUnitario) > 0
+    )
+    .map(({ elemento, ...rest }) => rest);
+
+const updateSummary = () => {
+  const lineas = readLinesRaw();
+  let subtotal = 0;
+  lineas.forEach((linea) => {
+    let totalLinea = 0;
+    if (linea.productoId && linea.cantidad > 0 && linea.precioUnitario > 0) {
+      totalLinea = linea.cantidad * linea.precioUnitario;
+      subtotal += totalLinea;
+    }
+    const target = linea.elemento.querySelector('[data-line-total]');
+    if (target) {
+      target.textContent = formatCurrency(totalLinea);
+    }
+  });
+  const iva = Number((subtotal * IVA_RATE).toFixed(2));
+  const total = Number((subtotal + iva).toFixed(2));
+  summarySubtotalEl.textContent = formatCurrency(subtotal);
+  summaryIvaEl.textContent = formatCurrency(iva);
+  summaryTotalEl.textContent = formatCurrency(total);
+};
+
+const syncLinePriceWithProduct = (lineaEl) => {
+  if (!lineaEl) return;
+  const productoSelect = lineaEl.querySelector('.producto');
+  const precioInput = lineaEl.querySelector('.precio');
+  if (!productoSelect || !precioInput) return;
+  const productId = Number(productoSelect.value);
+  if (!productId) return;
+  const product = state.productos.find(
+    (item) => Number(item.id) === Number(productId)
+  );
+  if (product) {
+    precioInput.value = Number(product.precio).toFixed(2);
+  }
 };
 
 const loadData = async () => {
@@ -147,7 +239,8 @@ const loadData = async () => {
     state.productos = productos;
     renderInventario();
     renderClientes();
-    lineasContainer.innerHTML = renderLineaRow({}, 0);
+    lineasContainer.innerHTML = renderLineaRow({}, Date.now());
+    updateSummary();
     totalProductosEl.textContent = state.productos.length;
     totalClientesEl.textContent = state.clientes.length;
     stockCriticoEl.textContent = state.inventario.filter(
@@ -169,16 +262,9 @@ facturaForm.addEventListener('submit', async (event) => {
     return;
   }
 
-  const lineas = [...lineasContainer.querySelectorAll('.linea')]
-    .map((linea) => ({
-      productoId: Number(linea.querySelector('.producto').value),
-      cantidad: Number(linea.querySelector('.cantidad').value),
-      precioUnitario: Number(linea.querySelector('.precio').value),
-    }))
-    .filter((linea) => linea.productoId && linea.cantidad > 0);
-
+  const lineas = getValidLines();
   if (!lineas.length) {
-    alert('Agregue al menos un producto');
+    alert('Agregue al menos un producto con cantidad válida');
     return;
   }
 
@@ -191,11 +277,15 @@ facturaForm.addEventListener('submit', async (event) => {
     resultado.innerHTML = `
       <h3>Factura generada</h3>
       <p>Número: <strong>${factura.numero}</strong></p>
-      <p>Total: <strong>$${factura.total}</strong></p>
+      <p>Subtotal: <strong>${formatCurrency(factura.subtotal)}</strong></p>
+      <p>IVA: <strong>${formatCurrency(factura.impuestos)}</strong></p>
+      <p>Total: <strong>${formatCurrency(factura.total)}</strong></p>
       <pre>${JSON.stringify(factura, null, 2)}</pre>
     `;
-    loadData();
+    await loadData();
     facturaForm.reset();
+    lineasContainer.innerHTML = renderLineaRow({}, Date.now());
+    updateSummary();
   } catch (error) {
     resultado.innerHTML = `<p class="error">${error.message}</p>`;
   } finally {
@@ -206,6 +296,22 @@ facturaForm.addEventListener('submit', async (event) => {
 lineasContainer.addEventListener('click', (event) => {
   if (event.target.classList.contains('remove')) {
     removeLinea(event.target);
+  }
+});
+
+lineasContainer.addEventListener('change', (event) => {
+  if (event.target.classList.contains('producto')) {
+    syncLinePriceWithProduct(event.target.closest('.linea'));
+  }
+  updateSummary();
+});
+
+lineasContainer.addEventListener('input', (event) => {
+  if (
+    event.target.classList.contains('cantidad') ||
+    event.target.classList.contains('precio')
+  ) {
+    updateSummary();
   }
 });
 
