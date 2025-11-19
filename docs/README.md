@@ -76,7 +76,7 @@ Características:
 
 - Consumo dinámico de `GET /inventario`, `GET /clientes`, `GET /productos`.
 - Formulario para `POST /facturas` con múltiples líneas de producto, captura de notas y render del resultado.
-- Selector de URL base de API almacenado en `localStorage` para apuntar a ambientes QA/Prod.
+- La URL base del API se define en `frontend/app.js` (`DEFAULT_API_BASE`) para apuntar al backend desplegado.
 - Service Worker (`sw.js`) y `manifest.json` listos para instalación en Android/iOS (via Chrome/Safari) como app standalone.
 - Íconos (192/512 px) incluidos.
 

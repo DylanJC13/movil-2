@@ -1,6 +1,5 @@
-const API_URL_KEY = 'facturacion_api_url';
-const apiInput = document.getElementById('apiUrl');
-const statusLabel = document.getElementById('status');
+const DEFAULT_API_BASE =
+  'https://movil-2-qna8j.ondigitalocean.app/movil-2-backend';
 const inventarioContainer = document.getElementById('inventario');
 const clientesContainer = document.getElementById('clientes');
 const clienteSelect = document.getElementById('clienteSelect');
@@ -9,16 +8,32 @@ const facturaForm = document.getElementById('facturaForm');
 const resultado = document.getElementById('facturaResultado');
 const notasInput = document.getElementById('notas');
 const addLineaBtn = document.getElementById('addLinea');
-const saveApiUrlBtn = document.getElementById('saveApiUrl');
+const refreshBtn = document.getElementById('refreshBtn');
+const statusBadge = document.getElementById('statusBadge');
+const lastSyncLabel = document.getElementById('lastSync');
+const apiInfoLabel = document.getElementById('apiInfo');
+const totalProductosEl = document.getElementById('totalProductos');
+const totalClientesEl = document.getElementById('totalClientes');
+const stockCriticoEl = document.getElementById('stockCritico');
 
 const state = {
-  apiBase: localStorage.getItem(API_URL_KEY) || 'http://localhost:4000',
+  apiBase: DEFAULT_API_BASE,
   inventario: [],
   clientes: [],
   productos: [],
 };
 
-apiInput.value = state.apiBase;
+apiInfoLabel.textContent = state.apiBase;
+
+const setStatus = (message, tone = 'info') => {
+  statusBadge.textContent = message;
+  statusBadge.classList.remove('success', 'error');
+  if (tone === 'success') {
+    statusBadge.classList.add('success');
+  } else if (tone === 'error') {
+    statusBadge.classList.add('error');
+  }
+};
 
 const fetchJson = async (path, options = {}) => {
   const url = `${state.apiBase}${path}`;
@@ -44,7 +59,9 @@ const renderInventario = () => {
           <p>SKU: ${item.sku}</p>
           <p>Stock: <strong>${item.stock}</strong></p>
           <p>Precio: $${item.precio}</p>
-          <span class="badge ${item.requiere_reabastecimiento ? 'alert' : ''}">
+          <span class="badge ${
+            item.requiere_reabastecimiento ? 'alert' : 'ok'
+          }">
             ${item.requiere_reabastecimiento ? 'Reponer inventario' : 'Stock OK'}
           </span>
         </article>
@@ -106,20 +123,6 @@ const renderLineaRow = (linea, index) => {
   `;
 };
 
-const renderLineas = () => {
-  const lineas = [...lineasContainer.querySelectorAll('.linea')].map((linea) => ({
-    productoId: Number(linea.querySelector('.producto').value),
-    cantidad: Number(linea.querySelector('.cantidad').value),
-    precioUnitario: Number(linea.querySelector('.precio').value),
-  }));
-  lineasContainer.innerHTML = lineas
-    .map((linea, index) => renderLineaRow(linea, index))
-    .join('');
-  if (!lineas.length) {
-    lineasContainer.innerHTML = renderLineaRow({}, 0);
-  }
-};
-
 const addLinea = () => {
   const linea = document.createElement('div');
   linea.innerHTML = renderLineaRow({}, Date.now());
@@ -133,7 +136,7 @@ const removeLinea = (target) => {
 
 const loadData = async () => {
   try {
-    statusLabel.textContent = 'Sincronizando...';
+    setStatus('Sincronizando…');
     const [inventario, clientes, productos] = await Promise.all([
       fetchJson('/inventario'),
       fetchJson('/clientes'),
@@ -145,10 +148,16 @@ const loadData = async () => {
     renderInventario();
     renderClientes();
     lineasContainer.innerHTML = renderLineaRow({}, 0);
-    statusLabel.textContent = 'Listo';
+    totalProductosEl.textContent = state.productos.length;
+    totalClientesEl.textContent = state.clientes.length;
+    stockCriticoEl.textContent = state.inventario.filter(
+      (item) => item.requiere_reabastecimiento
+    ).length;
+    lastSyncLabel.textContent = new Date().toLocaleTimeString();
+    setStatus('Actualizado', 'success');
   } catch (error) {
     console.error(error);
-    statusLabel.textContent = 'Error conectando a la API';
+    setStatus('Error API', 'error');
   }
 };
 
@@ -201,12 +210,7 @@ lineasContainer.addEventListener('click', (event) => {
 });
 
 addLineaBtn.addEventListener('click', addLinea);
-saveApiUrlBtn.addEventListener('click', () => {
-  state.apiBase = apiInput.value.trim();
-  localStorage.setItem(API_URL_KEY, state.apiBase);
-  statusLabel.textContent = 'URL guardada';
-  loadData();
-});
+refreshBtn.addEventListener('click', loadData);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch((err) =>
