@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Computación Móvil · API Demo</title>
+    <meta name="description" content="PWA que consume una API REST de cursos.">
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header>
+        <div>
+          <p class="eyebrow">Demo Backend · REST</p>
+          <h1>Computación Móvil</h1>
+          <p class="subtitle">Consulta cursos, avisos y levanta tickets desde tu navegador.</p>
+        </div>
+        <button id="installBtn" hidden>Instalar PWA</button>
+      </header>
+
+      <main>
+      <section class="card" id="coursesSection">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Oferta académica</p>
+            <h2>Cursos disponibles</h2>
+          </div>
+          <form id="filtersForm">
+            <label>
+              Modalidad
+              <select name="modality">
+                <option value="">Todas</option>
+                <option value="Presencial">Presencial</option>
+                <option value="Virtual">Virtual</option>
+                <option value="Híbrido">Híbrido</option>
+                <option value="Remoto">Remoto</option>
+              </select>
+            </label>
+            <label>
+              Campus
+              <input type="text" name="campus" placeholder="Neiva" />
+            </label>
+            <label>
+              Tag
+              <input type="text" name="tag" placeholder="android" />
+            </label>
+            <label>
+              Buscar
+              <input type="search" name="search" placeholder="devops" />
+            </label>
+            <button type="submit">Filtrar</button>
+          </form>
+        </div>
+        <div id="coursesList" class="list"></div>
+      </section>
+
+      <section class="card" id="announcementsSection">
+        <p class="eyebrow">Actualidad</p>
+        <h2>Avisos oficiales</h2>
+        <div id="announcementsList" class="list announcements"></div>
+      </section>
+
+      <section class="card" id="createCourseSection">
+        <p class="eyebrow">Nuevo curso</p>
+        <h2>Registrar oferta</h2>
+        <form id="courseForm" class="stack">
+          <label>
+            Título
+            <input type="text" name="title" required minlength="4" />
+          </label>
+          <label>
+            Docente
+            <input type="text" name="instructor" required minlength="3" />
+          </label>
+          <label>
+            Créditos
+            <input type="number" name="credits" min="1" max="10" required />
+          </label>
+          <label>
+            Modalidad
+            <select name="modality" required>
+              <option value="Presencial">Presencial</option>
+              <option value="Virtual">Virtual</option>
+              <option value="Híbrido">Híbrido</option>
+              <option value="Remoto">Remoto</option>
+            </select>
+          </label>
+          <label>
+            Horario
+            <input type="text" name="schedule" placeholder="Lunes 8-10 AM" required />
+          </label>
+          <label>
+            Campus
+            <input type="text" name="campus" placeholder="Neiva" required />
+          </label>
+          <label>
+            Fecha de inicio
+            <input type="date" name="startDate" required />
+          </label>
+          <label>
+            Tags (separados por coma)
+            <input type="text" name="tags" placeholder="android,pwa" />
+          </label>
+          <label>
+            Resumen
+            <textarea name="summary" rows="3" minlength="10" maxlength="280" required></textarea>
+          </label>
+          <button type="submit">Guardar curso</button>
+          <p id="courseStatus" role="status"></p>
+        </form>
+      </section>
+    </main>
+    </div>
+
+    <template id="courseTemplate">
+      <article class="list-item course">
+        <div class="course-head">
+          <div>
+            <h3></h3>
+            <p class="muted"></p>
+          </div>
+          <span class="badge credits"></span>
+        </div>
+        <p class="summary"></p>
+        <ul class="meta">
+          <li class="icon schedule"></li>
+          <li class="icon campus"></li>
+          <li class="icon modality"></li>
+        </ul>
+        <ul class="tags"></ul>
+      </article>
+    </template>
+
+    <template id="announcementTemplate">
+      <article class="list-item announcement">
+        <div class="announcement-head">
+          <p class="eyebrow"></p>
+          <span class="badge level"></span>
+        </div>
+        <h3></h3>
+        <p class="summary"></p>
+      </article>
+    </template>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

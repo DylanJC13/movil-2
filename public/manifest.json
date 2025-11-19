@@ -1,0 +1,22 @@
+{
+  "name": "Computación Móvil",
+  "short_name": "CMóvil",
+  "theme_color": "#0f172a",
+  "background_color": "#020617",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "description": "PWA que consume una API REST académica",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
