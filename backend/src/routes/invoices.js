@@ -1,6 +1,10 @@
 const express = require('express');
 const { body, param, validationResult } = require('express-validator');
-const { createInvoice, getInvoiceById } = require('../services/invoiceService');
+const {
+  createInvoice,
+  getInvoiceById,
+  listInvoices,
+} = require('../services/invoiceService');
 
 const router = express.Router();
 
@@ -10,6 +14,15 @@ const validate = (validations) => async (req, res, next) => {
   if (errors.isEmpty()) return next();
   res.status(400).json({ errors: errors.array() });
 };
+
+router.get('/', async (req, res, next) => {
+  try {
+    const invoices = await listInvoices();
+    res.json(invoices);
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.post(
   '/',

@@ -6,6 +6,14 @@ const currencyFormatter = new Intl.NumberFormat('es-EC', {
   currency: 'USD',
 });
 const formatCurrency = (value = 0) => currencyFormatter.format(Number(value) || 0);
+const formatDate = (value) =>
+  value
+    ? new Date(value).toLocaleDateString('es-EC', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '--';
 
 const inventarioContainer = document.getElementById('inventario');
 const clientesContainer = document.getElementById('clientes');
@@ -25,12 +33,20 @@ const stockCriticoEl = document.getElementById('stockCritico');
 const summarySubtotalEl = document.getElementById('summarySubtotal');
 const summaryIvaEl = document.getElementById('summaryIva');
 const summaryTotalEl = document.getElementById('summaryTotal');
+const productoForm = document.getElementById('productoForm');
+const clienteForm = document.getElementById('clienteForm');
+const productoMessage = document.getElementById('productoMessage');
+const clienteMessage = document.getElementById('clienteMessage');
+const facturasContainer = document.getElementById('facturas');
+const loadFacturasBtn = document.getElementById('loadFacturas');
+const facturasStatus = document.getElementById('facturasStatus');
 
 const state = {
   apiBase: DEFAULT_API_BASE,
   inventario: [],
   clientes: [],
   productos: [],
+  facturas: [],
 };
 
 apiInfoLabel.textContent = state.apiBase;
@@ -45,6 +61,39 @@ const setStatus = (message, tone = 'info') => {
   }
 };
 
+const showFormMessage = (element, message, tone = 'success') => {
+  if (!element) return;
+  element.textContent = message;
+  element.classList.remove('success', 'error');
+  if (tone === 'success') {
+    element.classList.add('success');
+  } else if (tone === 'error') {
+    element.classList.add('error');
+  }
+  if (message) {
+    setTimeout(() => {
+      element.textContent = '';
+      element.classList.remove('success', 'error');
+    }, 4000);
+  }
+};
+
+const parseErrorMessage = async (response) => {
+  const text = await response.text();
+  if (!text) return `Error ${response.status}`;
+  try {
+    const data = JSON.parse(text);
+    if (typeof data === 'string') return data;
+    if (data.message) return data.message;
+    if (Array.isArray(data.errors)) {
+      return data.errors.map((err) => err.msg || err.message).join(', ');
+    }
+    return text;
+  } catch (error) {
+    return text;
+  }
+};
+
 const fetchJson = async (path, options = {}) => {
   const url = `${state.apiBase}${path}`;
   const response = await fetch(url, {
@@ -52,7 +101,7 @@ const fetchJson = async (path, options = {}) => {
     ...options,
   });
   if (!response.ok) {
-    const message = await response.text();
+    const message = await parseErrorMessage(response);
     throw new Error(message || 'Error de red');
   }
   return response.headers.get('content-type')?.includes('application/json')
@@ -211,6 +260,51 @@ const updateSummary = () => {
   summaryTotalEl.textContent = formatCurrency(total);
 };
 
+const renderFacturas = () => {
+  if (!facturasContainer) return;
+  if (!state.facturas.length) {
+    facturasContainer.innerHTML =
+      '<p class="hint">No hay facturas registradas o no se han cargado aún.</p>';
+    return;
+  }
+
+  facturasContainer.innerHTML = state.facturas
+    .map((factura) => {
+      const detalles = Array.isArray(factura.detalles) ? factura.detalles : [];
+      const detalleLista = detalles
+        .map(
+          (detalle) => `
+            <li>
+              ${detalle.descripcion || `Producto ${detalle.producto_id}`} · ${
+            detalle.cantidad
+          } x ${formatCurrency(detalle.precio_unitario)} =
+              ${formatCurrency(detalle.subtotal)}
+            </li>
+          `
+        )
+        .join('');
+
+      return `
+        <article class="invoice-card">
+          <header>
+            <h3>${factura.numero}</h3>
+            <span>${formatDate(factura.fecha)}</span>
+          </header>
+          <p><strong>Cliente:</strong> ${factura.cliente?.nombre || 'N/A'}</p>
+          <p><strong>Estado:</strong> ${factura.estado}</p>
+          <p class="invoice-total">Total: ${formatCurrency(factura.total)}</p>
+          <div>
+            <p><strong>Detalle:</strong></p>
+            <ul>
+              ${detalleLista || '<li>Sin detalles</li>'}
+            </ul>
+          </div>
+        </article>
+      `;
+    })
+    .join('');
+};
+
 const syncLinePriceWithProduct = (lineaEl) => {
   if (!lineaEl) return;
   const productoSelect = lineaEl.querySelector('.producto');
@@ -224,6 +318,11 @@ const syncLinePriceWithProduct = (lineaEl) => {
   if (product) {
     precioInput.value = Number(product.precio).toFixed(2);
   }
+};
+
+const setFacturasStatus = (message) => {
+  if (!facturasStatus) return;
+  facturasStatus.textContent = message || '';
 };
 
 const loadData = async () => {
@@ -251,6 +350,19 @@ const loadData = async () => {
   } catch (error) {
     console.error(error);
     setStatus('Error API', 'error');
+  }
+};
+
+const loadFacturas = async () => {
+  try {
+    setFacturasStatus('Cargando facturas...');
+    const facturas = await fetchJson('/facturas');
+    state.facturas = facturas;
+    renderFacturas();
+    setFacturasStatus(`Última consulta: ${new Date().toLocaleTimeString()}`);
+  } catch (error) {
+    console.error(error);
+    setFacturasStatus(error.message);
   }
 };
 
@@ -317,6 +429,57 @@ lineasContainer.addEventListener('input', (event) => {
 
 addLineaBtn.addEventListener('click', addLinea);
 refreshBtn.addEventListener('click', loadData);
+
+productoForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const formData = new FormData(productoForm);
+  const payload = {
+    nombre: formData.get('nombre')?.trim(),
+    sku: formData.get('sku')?.trim(),
+    precio: Number(formData.get('precio')),
+    stock: Number(formData.get('stock')),
+    stockMinimo: Number(formData.get('stockMinimo') || 0),
+    descripcion: formData.get('descripcion')?.trim(),
+  };
+  try {
+    await fetchJson('/productos', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    showFormMessage(productoMessage, 'Producto registrado correctamente', 'success');
+    productoForm.reset();
+    await loadData();
+  } catch (error) {
+    showFormMessage(productoMessage, error.message, 'error');
+  }
+});
+
+clienteForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const formData = new FormData(clienteForm);
+  const payload = {
+    nombre: formData.get('nombre')?.trim(),
+    identificacion: formData.get('identificacion')?.trim(),
+    correo: formData.get('correo')?.trim() || undefined,
+    telefono: formData.get('telefono')?.trim() || undefined,
+    direccion: formData.get('direccion')?.trim() || undefined,
+  };
+  try {
+    await fetchJson('/clientes', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    showFormMessage(clienteMessage, 'Cliente registrado correctamente', 'success');
+    clienteForm.reset();
+    await loadData();
+  } catch (error) {
+    showFormMessage(clienteMessage, error.message, 'error');
+  }
+});
+
+loadFacturasBtn?.addEventListener('click', loadFacturas);
+setFacturasStatus('Pulsa "Ver facturas" para consultar el historial.');
+renderFacturas();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch((err) =>

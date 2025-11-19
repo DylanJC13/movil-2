@@ -168,7 +168,61 @@ const getInvoiceById = async (id) => {
   return formatInvoice(factura, detalles);
 };
 
+const listInvoices = async () => {
+  const { rows } = await query(
+    `SELECT f.id,
+            f.numero,
+            f.fecha,
+            f.subtotal,
+            f.impuestos,
+            f.total,
+            f.estado,
+            f.notas,
+            c.id AS cliente_id,
+            c.nombre AS cliente_nombre,
+            c.identificacion,
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', d.id,
+                  'producto_id', d.producto_id,
+                  'descripcion', p.nombre,
+                  'cantidad', d.cantidad,
+                  'precio_unitario', d.precio_unitario,
+                  'subtotal', d.subtotal
+                )
+              ) FILTER (WHERE d.id IS NOT NULL),
+              '[]'
+            ) AS detalles
+       FROM facturas f
+       JOIN clientes c ON c.id = f.cliente_id
+       LEFT JOIN detalle_factura d ON d.factura_id = f.id
+       LEFT JOIN productos p ON p.id = d.producto_id
+      GROUP BY f.id, c.id
+      ORDER BY f.fecha DESC
+      LIMIT 100`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    numero: row.numero,
+    fecha: row.fecha,
+    cliente: {
+      id: row.cliente_id,
+      nombre: row.cliente_nombre,
+      identificacion: row.identificacion,
+    },
+    subtotal: row.subtotal,
+    impuestos: row.impuestos,
+    total: row.total,
+    estado: row.estado,
+    notas: row.notas,
+    detalles: row.detalles ?? [],
+  }));
+};
+
 module.exports = {
   createInvoice,
   getInvoiceById,
+  listInvoices,
 };

@@ -41,9 +41,12 @@ npm start              # producción
 4. Endpoints requeridos:
    - `GET /productos`: catálogo completo.
    - `GET /productos/:id`: detalle individual.
+   - `POST /productos`: alta de nuevos ítems con validaciones.
    - `GET /inventario`: estado de stock e indicador de reposición.
    - `GET /clientes`: consulta de clientes.
+   - `POST /clientes`: registro de nuevos clientes.
    - `POST /facturas`: genera factura, descuenta inventario, registra venta.
+   - `GET /facturas`: historial resumido con detalles agregados.
    - `GET /facturas/:id`: consulta factura y detalle.
 
 5. Seguridad y buenas prácticas:
@@ -75,8 +78,10 @@ psql "postgres://doadmin:<CONTRASEÑA>@movil-1-do-user-28304087-0.d.db.ondigital
 Características:
 
 - Consumo dinámico de `GET /inventario`, `GET /clientes`, `GET /productos`.
-- Formulario para `POST /facturas` con múltiples líneas de producto, captura de notas y render del resultado.
+- Formularios dedicados para registrar productos y clientes (consumen `POST /productos` y `POST /clientes`).
+- Formulario para `POST /facturas` con múltiples líneas de producto, captura de notas y render del resultado, incluyendo resumen de subtotal/IVA/total.
 - La URL base del API se define en `frontend/app.js` (`DEFAULT_API_BASE`) para apuntar al backend desplegado.
+- Módulo de "Facturas generadas" que carga el historial (vía `GET /facturas`) al pulsar el botón correspondiente y muestra los detalles con formato legible.
 - Service Worker (`sw.js`) y `manifest.json` listos para instalación en Android/iOS (via Chrome/Safari) como app standalone.
 - Íconos (192/512 px) incluidos.
 
