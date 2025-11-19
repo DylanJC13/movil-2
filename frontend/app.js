@@ -43,6 +43,9 @@ const facturasStatus = document.getElementById('facturasStatus');
 
 const viewButtons = document.querySelectorAll('.nav-button');
 const views = document.querySelectorAll('.view');
+const stockBarCanvas = document.getElementById('stockBarChart');
+const stockPieCanvas = document.getElementById('stockPieChart');
+const ventasCanvas = document.getElementById('ventasChart');
 
 const state = {
   apiBase: DEFAULT_API_BASE,
@@ -51,6 +54,7 @@ const state = {
   productos: [],
   facturas: [],
   currentView: 'inventario',
+  charts: {},
 };
 
 apiInfoLabel.textContent = state.apiBase;
@@ -141,6 +145,65 @@ const renderInventario = () => {
       `
     )
     .join('');
+};
+
+const updateChart = (key, canvas, config) => {
+  if (!canvas || !window.Chart) return;
+  if (state.charts[key]) {
+    state.charts[key].destroy();
+  }
+  state.charts[key] = new Chart(canvas, config);
+};
+
+const renderInventoryCharts = () => {
+  if (!state.inventario.length) return;
+  const labels = state.inventario.map((item) => item.nombre);
+  const stockData = state.inventario.map((item) => item.stock);
+
+  updateChart('stockBar', stockBarCanvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Stock disponible',
+          data: stockData,
+          backgroundColor: '#4f46e5',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        y: { beginAtZero: true },
+      },
+    },
+  });
+
+  const criticos = state.inventario.filter((item) => item.requiere_reabastecimiento)
+    .length;
+  const ok = state.inventario.length - criticos;
+
+  updateChart('stockPie', stockPieCanvas, {
+    type: 'doughnut',
+    data: {
+      labels: ['Stock OK', 'Crítico'],
+      datasets: [
+        {
+          data: [ok, criticos],
+          backgroundColor: ['#22c55e', '#dc2626'],
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+    },
+  });
 };
 
 const renderClientes = () => {
@@ -319,6 +382,58 @@ const renderFacturas = () => {
     .join('');
 };
 
+const renderVentasChart = () => {
+  if (!ventasCanvas || !state.facturas.length) return;
+  const aggregations = {};
+  state.facturas.forEach((factura) => {
+    const detalles = Array.isArray(factura.detalles) ? factura.detalles : [];
+    detalles.forEach((detalle) => {
+      const key = detalle.descripcion || `Producto ${detalle.producto_id}`;
+      aggregations[key] = (aggregations[key] || 0) + Number(detalle.cantidad || 0);
+    });
+  });
+  const entries = Object.entries(aggregations)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 7);
+
+  if (!entries.length) {
+    updateChart('ventas', ventasCanvas, {
+      type: 'bar',
+      data: {
+        labels: ['Sin datos'],
+        datasets: [
+          {
+            label: 'Unidades vendidas',
+            data: [0],
+            backgroundColor: '#94a3b8',
+          },
+        ],
+      },
+    });
+    return;
+  }
+
+  updateChart('ventas', ventasCanvas, {
+    type: 'bar',
+    data: {
+      labels: entries.map(([label]) => label),
+      datasets: [
+        {
+          label: 'Unidades vendidas',
+          data: entries.map(([, total]) => total),
+          backgroundColor: '#f97316',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true },
+      },
+    },
+  });
+};
 const renderInvoicePreview = (factura) => {
   const detalles = Array.isArray(factura.detalles) ? factura.detalles : [];
   const detalleRows = detalles
@@ -408,6 +523,7 @@ const loadData = async () => {
     renderClientes();
     lineasContainer.innerHTML = renderLineaRow({}, Date.now());
     updateSummary();
+    renderInventoryCharts();
     totalProductosEl.textContent = state.productos.length;
     totalClientesEl.textContent = state.clientes.length;
     stockCriticoEl.textContent = state.inventario.filter(
@@ -427,6 +543,7 @@ const loadFacturas = async () => {
     const facturas = await fetchJson('/facturas');
     state.facturas = facturas;
     renderFacturas();
+    renderVentasChart();
     setFacturasStatus(`Última consulta: ${new Date().toLocaleTimeString()}`);
   } catch (error) {
     console.error(error);

@@ -7,6 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#0f172a" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <div class="layout">
@@ -74,6 +75,23 @@
                 </button>
               </div>
               <div id="inventario" class="cards"></div>
+            </section>
+
+            <section class="panel panel-form">
+              <div>
+                <h2>Visualización de inventario</h2>
+                <p>Analiza existencias y niveles críticos</p>
+              </div>
+              <div class="charts-grid">
+                <div class="chart-card">
+                  <p class="label">Stock por producto</p>
+                  <canvas id="stockBarChart" height="280"></canvas>
+                </div>
+                <div class="chart-card">
+                  <p class="label">Estado del inventario</p>
+                  <canvas id="stockPieChart" height="280"></canvas>
+                </div>
+              </div>
             </section>
 
             <section class="panel panel-form">
@@ -208,6 +226,16 @@
               </div>
               <p id="facturasStatus" class="hint"></p>
               <div id="facturas" class="facturas"></div>
+            </section>
+
+            <section class="panel panel-form">
+              <div>
+                <h2>Movimientos de producto</h2>
+                <p>Top productos vendidos según facturación</p>
+              </div>
+              <div class="chart-card full">
+                <canvas id="ventasChart" height="300"></canvas>
+              </div>
             </section>
           </section>
         </main>
