@@ -388,6 +388,11 @@ button:disabled {
   border: 1px solid #e2e8f0;
   border-radius: 1rem;
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 260px;
+  max-height: 360px;
 }
 
 .chart-card .label {
@@ -396,6 +401,11 @@ button:disabled {
   font-size: 0.75rem;
   color: var(--slate-500);
   margin-bottom: 0.5rem;
+}
+
+.chart-card canvas {
+  flex: 1;
+  max-height: 280px;
 }
 
 .summary-panel {
