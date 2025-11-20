@@ -1,23 +1,6 @@
-const REMOTE_APIS = {
-  render: 'https://computacion-movil.onrender.com/api',
-  digitalocean: 'https://whale-app-ptl77.ondigitalocean.app/api'
-};
-
-function resolveApiBase() {
-  const origin = window.location.origin;
-
-  if (origin.includes('ondigitalocean.app')) {
-    return REMOTE_APIS.digitalocean;
-  }
-
-  if (origin.includes('computacion-movil.pages.dev') || origin.includes('onrender.com')) {
-    return REMOTE_APIS.render;
-  }
-
-  return `${origin}/api`;
-}
-
-const API_BASE = resolveApiBase();
+const API_BASE = window.location.origin.includes('ondigitalocean.app')
+  ? 'https://whale-app-ptl77.ondigitalocean.app/api'
+  : `${window.location.origin}/api`;
 
 async function fetchJSON(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
